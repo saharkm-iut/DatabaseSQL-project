@@ -41,7 +41,15 @@ balance decimal(20, 2) default 0.00 CHECK(balance>=0),
 updated_at DATETIME2 DEFAULT SYSDATETIME(),
 CONSTRAINT FK_wallets_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
-
+CREATE TABLE coupons (
+    coupon_id INT IDENTITY(1,1) PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    service_type VARCHAR(20) CHECK (service_type IN ('Food', 'Taxi', 'Global')) NOT NULL,
+    discount_type VARCHAR(20) CHECK (discount_type IN ('Percentage', 'Fixed_Amount')) NOT NULL,
+    discount_value DECIMAL(18,2) NOT NULL,
+    max_discount DECIMAL(18,2) NULL, 
+    expiry_date DATETIME NOT NULL
+);
 create table taxi_trips(
 trip_id int identity(1,1) primary key,
 passenger_id int not null, 
