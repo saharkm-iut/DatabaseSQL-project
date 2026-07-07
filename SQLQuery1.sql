@@ -53,7 +53,7 @@ CREATE TABLE coupons (
 create table taxi_trips(
 trip_id int identity(1,1) primary key,
 passenger_id int not null, 
---driver_id int CHECK(driver_id IS NOT NULL OR status='Searching'),
+driver_id int CHECK(driver_id IS NOT NULL OR status='Searching'),
 pickup_address NVARCHAR(500) NOT NULL,
 dropoff_address NVARCHAR(500) NOT NULL,
 pickup_latitude DECIMAL(9,6) NOT NULL,
