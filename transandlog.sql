@@ -63,15 +63,6 @@ created_at DATETIME2 DEFAULT SYSDATETIME(),
 CONSTRAint FK_tickets_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 
 );
-create table activity_log(
-log_id int identity(1,1) primary key,
-user_id int not null,
-action nvarchar(200) not null, 
-created_at DATETIME2 DEFAULT SYSDATETIME(),
-CONSTRAint FK_logs_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-
-
-);
 create table food_deliveries(
 driver_id int not null,
 delivery_id int identity(1 , 1) primary key,
