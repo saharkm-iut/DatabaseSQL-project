@@ -2,38 +2,38 @@ use dbproject;
 
 
 
---DELETE FROM Taxi.trip_message;
---DELETE FROM Taxi.trip_review;
---DELETE FROM Taxi.taxi_trips;
---DELETE FROM Taxi.live_location_driver;
---DELETE FROM Taxi.driver_doc;
---DELETE FROM Taxi.vehicles;
---DELETE FROM Taxi.drivers;
+DELETE FROM Taxi.trip_message;
+DELETE FROM Taxi.trip_review;
+DELETE FROM Taxi.taxi_trips;
+DELETE FROM Taxi.live_location_driver;
+DELETE FROM Taxi.driver_doc;
+DELETE FROM Taxi.vehicles;
+DELETE FROM Taxi.drivers;
 
---DELETE FROM Payment.coupons;
+DELETE FROM Payment.coupons;
 
---DELETE FROM Account.user_roles;
---DELETE FROM Account.user_address;
---DELETE FROM Account.users;
---DELETE FROM Account.roles;
+DELETE FROM Account.user_roles;
+DELETE FROM Account.user_address;
+DELETE FROM Account.users;
+DELETE FROM Account.roles;
 
---IF OBJECT_ID('Taxi.DriverImport','U') IS NOT NULL
---    DELETE FROM Taxi.DriverImport;
---GO
---DBCC CHECKIDENT ('Account.users', RESEED, 0);
---DBCC CHECKIDENT ('Account.roles', RESEED, 0);
---DBCC CHECKIDENT ('Account.user_address', RESEED, 0);
+IF OBJECT_ID('Taxi.DriverImport','U') IS NOT NULL
+    DELETE FROM Taxi.DriverImport;
+GO
+DBCC CHECKIDENT ('Account.users', RESEED, 0);
+DBCC CHECKIDENT ('Account.roles', RESEED, 0);
+DBCC CHECKIDENT ('Account.user_address', RESEED, 0);
 
---DBCC CHECKIDENT ('Payment.coupons', RESEED, 0);
+DBCC CHECKIDENT ('Payment.coupons', RESEED, 0);
 
---DBCC CHECKIDENT ('Taxi.taxi_trips', RESEED, 0);
---DBCC CHECKIDENT ('Taxi.vehicles', RESEED, 0);
---DBCC CHECKIDENT ('Taxi.live_location_driver', RESEED, 0);
---DBCC CHECKIDENT ('Taxi.trip_review', RESEED, 0);
---DBCC CHECKIDENT ('Taxi.fare_rule', RESEED, 0);
---DBCC CHECKIDENT ('Taxi.driver_doc', RESEED, 0);
---DBCC CHECKIDENT ('Taxi.trip_message', RESEED, 0);
---GO
+DBCC CHECKIDENT ('Taxi.taxi_trips', RESEED, 0);
+DBCC CHECKIDENT ('Taxi.vehicles', RESEED, 0);
+DBCC CHECKIDENT ('Taxi.live_location_driver', RESEED, 0);
+DBCC CHECKIDENT ('Taxi.trip_review', RESEED, 0);
+DBCC CHECKIDENT ('Taxi.fare_rule', RESEED, 0);
+DBCC CHECKIDENT ('Taxi.driver_doc', RESEED, 0);
+DBCC CHECKIDENT ('Taxi.trip_message', RESEED, 0);
+GO
 
 -- Roles
 INSERT INTO Account.roles(role_name)
@@ -132,45 +132,45 @@ license_num VARCHAR(10),
 national_code VARCHAR(10)
 );
 GO
---BULK INSERT Taxi.DriverImport
---FROM 'C:\Users\Padidar\Desktop\sth you should do\dbproj\drivers.csv'
---WITH
---(
---FORMAT='CSV',
---FIRSTROW=2,
---FIELDTERMINATOR=';',
---ROWTERMINATOR='0x0a',
---CODEPAGE='65001'
---);
---GO
---SELECT
---    phone_num,
---    LEN(phone_num) AS Len,
---    DATALENGTH(phone_num) AS DataLength,
---    '[' + phone_num + ']' AS Value
---FROM Taxi.DriverImport;
---DECLARE @firstname NVARCHAR(50),@lastname NVARCHAR(50),@phone VARCHAR(11),@email VARCHAR(100),@pass VARCHAR(255),@license VARCHAR(10),@national VARCHAR(10);
+BULK INSERT Taxi.DriverImport
+FROM 'C:\Users\Padidar\Desktop\sth you should do\dbproj\Drivers (2).csv'
+WITH
+(
+FORMAT='CSV',
+FIRSTROW=2,
+FIELDTERMINATOR=',',
+ROWTERMINATOR='\n',
+CODEPAGE='65001'
+);
+GO
+SELECT
+    phone_num,
+    LEN(phone_num) AS Len,
+    DATALENGTH(phone_num) AS DataLength,
+    '[' + phone_num + ']' AS Value
+FROM Taxi.DriverImport;
+DECLARE @firstname NVARCHAR(50),@lastname NVARCHAR(50),@phone VARCHAR(11),@email VARCHAR(100),@pass VARCHAR(255),@license VARCHAR(10),@national VARCHAR(10);
 
---DECLARE driver_cursor CURSOR LOCAL FAST_FORWARD FOR
---SELECT firstname,lastname,phone_num,email,pass_hash,license_num,national_code
---FROM Taxi.DriverImport;
+DECLARE driver_cursor CURSOR LOCAL FAST_FORWARD FOR
+SELECT firstname,lastname,phone_num,email,pass_hash,license_num,national_code
+FROM Taxi.DriverImport;
 
---OPEN driver_cursor;
+OPEN driver_cursor;
 
---FETCH NEXT FROM driver_cursor
---INTO @firstname,@lastname,@phone,@email,@pass,@license,@national;
+FETCH NEXT FROM driver_cursor
+INTO @firstname,@lastname,@phone,@email,@pass,@license,@national;
 
---WHILE @@FETCH_STATUS=0
---BEGIN
---EXEC Taxi.CreateDriver
---@firstname,@lastname,@phone,@email,@pass,@license,@national;
+WHILE @@FETCH_STATUS=0
+BEGIN
+EXEC Taxi.CreateDriver
+@firstname,@lastname,@phone,@email,@pass,@license,@national;
 
---FETCH NEXT FROM driver_cursor
---INTO @firstname,@lastname,@phone,@email,@pass,@license,@national;
---END
+FETCH NEXT FROM driver_cursor
+INTO @firstname,@lastname,@phone,@email,@pass,@license,@national;
+END
 
---CLOSE driver_cursor;
---DEALLOCATE driver_cursor;
---GO
+CLOSE driver_cursor;
+DEALLOCATE driver_cursor;
+GO
 select* from Taxi.drivers;
 

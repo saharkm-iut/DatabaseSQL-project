@@ -1,0 +1,5 @@
+﻿firstname,lastname,phone_num,email,pass_hash,license_num,national_code
+Ali,Ahmadi,09573456789,aliaha@gmail.com,hash,1234564490,0010000004
+Hossein,Rahimi,09123416787,hosseirdn@gmail.com,hash,3237367890,0072345674
+Mohammad,Jafari,09100456786,mohammadhgfh@gmail.com,hash,4234587890,0081234567
+Sina,Moradi,09126456785,sinajhgjkh@gmail.com,hash,5233367890,2281234562
