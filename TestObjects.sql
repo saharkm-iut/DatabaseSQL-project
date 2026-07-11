@@ -144,3 +144,44 @@ SELECT TOP 10 *
 FROM Food.food_log
 ORDER BY log_id DESC;
 GO
+
+/*test npro*/
+EXEC Food.SP_CreateFoodOrder
+    @CustomerID = 2,
+    @RestaurantID = 1,
+    @AddressID = 1,
+    @OrderAmount = 250000,
+    @CouponCode = NULL,
+    @DiscountAmount = 0;
+
+SELECT * FROM Food.food_orders;
+GO
+
+EXEC Food.SP_UpdateFoodOrderStatus
+    @OrderID = 1,
+    @NewStatus = 'Preparing';
+
+SELECT * FROM Food.food_orders
+WHERE order_id = 1;
+GO
+
+EXEC Food.SP_AddFoodReview
+    @CustomerID = 2,
+    @RestaurantID = 1,
+    @Rating = 5,
+    @Comment = N'غذا بسیار با کیفیت بود';
+
+SELECT * FROM Food.food_reviews;
+GO
+
+EXEC Food.SP_AddOrderItem
+    @OrderID = 1,
+    @FoodID = 2,
+    @Quantity = 2;
+
+SELECT * FROM Food.order_items
+WHERE order_id = 1;
+
+SELECT * FROM Food.food_orders
+WHERE order_id = 1;
+GO

@@ -326,3 +326,279 @@ BEGIN
     WHERE ISNULL(i.status,'') <> ISNULL(d.status,'');
 END;
 GO
+
+/*procejers*/
+USE DatabaseSQL_Project;
+GO
+
+CREATE OR ALTER PROCEDURE Food.SP_CreateFoodOrder
+(
+    @CustomerID INT,
+    @RestaurantID INT,
+    @AddressID INT,
+    @OrderAmount DECIMAL(18,2),
+    @CouponCode VARCHAR(50)=NULL,
+    @DiscountAmount DECIMAL(18,2)=0
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @CouponID INT = NULL;
+        DECLARE @FinalAmount DECIMAL(18,2);
+
+        IF @CouponCode IS NOT NULL
+        BEGIN
+            IF Payment.fn_ValidateCoupon(@CouponCode)=1
+            BEGIN
+                SELECT @CouponID=coupon_id
+                FROM Payment.coupons
+                WHERE code=@CouponCode;
+            END
+        END
+
+        SET @FinalAmount=
+            Food.fn_CalculateFinalAmount
+            (
+                @OrderAmount,
+                @DiscountAmount
+            );
+
+        INSERT INTO Food.food_orders
+        (
+            customer_id,
+            restaurant_id,
+            address_id,
+            coupon_id,
+            total_amount,
+            status
+        )
+        VALUES
+        (
+            @CustomerID,
+            @RestaurantID,
+            @AddressID,
+            @CouponID,
+            @FinalAmount,
+            'Pending'
+        );
+
+        COMMIT;
+
+        SELECT
+            SCOPE_IDENTITY() AS OrderID,
+            @FinalAmount AS FinalAmount,
+            N'Food Order Created Successfully' AS Message;
+
+    END TRY
+
+    BEGIN CATCH
+
+        ROLLBACK;
+        THROW;
+
+    END CATCH
+END;
+GO
+
+USE DatabaseSQL_Project;
+GO
+
+CREATE OR ALTER PROCEDURE Food.SP_UpdateFoodOrderStatus
+(
+    @OrderID INT,
+    @NewStatus VARCHAR(20)
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM Food.food_orders
+            WHERE order_id = @OrderID
+        )
+        BEGIN
+            RAISERROR(N'سفارش مورد نظر یافت نشد.',16,1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        UPDATE Food.food_orders
+        SET status = @NewStatus
+        WHERE order_id = @OrderID;
+
+        COMMIT;
+
+        SELECT
+            @OrderID AS OrderID,
+            @NewStatus AS NewStatus,
+            N'Order Status Updated Successfully' AS Message;
+
+    END TRY
+
+    BEGIN CATCH
+
+        ROLLBACK;
+        THROW;
+
+    END CATCH
+END;
+GO
+USE DatabaseSQL_Project;
+GO
+
+CREATE OR ALTER PROCEDURE Food.SP_AddFoodReview
+(
+    @CustomerID INT,
+    @RestaurantID INT,
+    @Rating INT,
+    @Comment NVARCHAR(1000) = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        -- بررسی وجود مشتری
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM Account.users
+            WHERE user_id = @CustomerID
+        )
+        BEGIN
+            RAISERROR(N'مشتری یافت نشد.',16,1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        -- بررسی وجود رستوران
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM Food.restaurants
+            WHERE restaurant_id = @RestaurantID
+        )
+        BEGIN
+            RAISERROR(N'رستوران یافت نشد.',16,1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        -- ثبت نظر
+        INSERT INTO Food.food_reviews
+        (
+            customer_id,
+            restaurant_id,
+            rating,
+            comment
+        )
+        VALUES
+        (
+            @CustomerID,
+            @RestaurantID,
+            @Rating,
+            @Comment
+        );
+
+        COMMIT;
+
+        SELECT
+            SCOPE_IDENTITY() AS ReviewID,
+            N'Food Review Added Successfully' AS Message;
+
+    END TRY
+
+    BEGIN CATCH
+
+        ROLLBACK;
+        THROW;
+
+    END CATCH
+END;
+GO
+USE DatabaseSQL_Project;
+GO
+
+CREATE OR ALTER PROCEDURE Food.SP_AddOrderItem
+(
+    @OrderID INT,
+    @FoodID INT,
+    @Quantity INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @UnitPrice DECIMAL(18,2);
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM Food.food_orders
+            WHERE order_id=@OrderID
+        )
+        BEGIN
+            RAISERROR(N'سفارش یافت نشد.',16,1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        SELECT @UnitPrice=price
+        FROM Food.foods
+        WHERE food_id=@FoodID;
+
+        IF @UnitPrice IS NULL
+        BEGIN
+            RAISERROR(N'غذا یافت نشد.',16,1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        INSERT INTO Food.order_items
+        (
+            order_id,
+            food_id,
+            quantity,
+            unit_price
+        )
+        VALUES
+        (
+            @OrderID,
+            @FoodID,
+            @Quantity,
+            @UnitPrice
+        );
+
+        UPDATE Food.food_orders
+        SET total_amount =
+            Food.fn_TotalOrderPrice(@OrderID)
+        WHERE order_id=@OrderID;
+
+        COMMIT;
+
+        SELECT
+            @OrderID AS OrderID,
+            N'Order Item Added Successfully' AS Message;
+
+    END TRY
+
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END;
+GO
