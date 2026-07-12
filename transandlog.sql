@@ -1,9 +1,11 @@
+use dbproject;
+go
 create table wallets(
 wallet_id int identity(1,1) primary key ,
 user_id int unique not null, 
 balance decimal(20, 2) default 0.00 CHECK(balance>=0),
 updated_at DATETIME2 DEFAULT SYSDATETIME(),
-CONSTRAint FK_wallets_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+CONSTRAint FK_wallets_users FOREIGN KEY (user_id) REFERENCES Account.users(user_id) ON DELETE CASCADE
 );
 CREATE TABLE wallet_transactions(
 
@@ -36,9 +38,9 @@ amount DECIMAL(18,2) not null CHECK(amount>0),
 payment_method VARCHAR(20) CHECK (payment_method IN ('Online', 'Wallet', 'Cash')) not null,
 status VARCHAR(20) CHECK (status IN ('Pending', 'Success', 'Failed')) default 'Pending',
 created_at DATETIME2 DEFAULT SYSDATETIME(),
-CONSTRAint FK_payments_users FOREIGN KEY (user_id) REFERENCES users(user_id),
-CONSTRAint FK_payments_orders FOREIGN KEY (order_id) REFERENCES food_orders(order_id),
-CONSTRAint FK_payments_trips FOREIGN KEY (trip_id) REFERENCES taxi_trips(trip_id),
+CONSTRAint FK_payments_users FOREIGN KEY (user_id) REFERENCES Account.users(user_id),
+CONSTRAint FK_payments_orders FOREIGN KEY (order_id) REFERENCES Food.food_orders(order_id),
+CONSTRAint FK_payments_trips FOREIGN KEY (trip_id) REFERENCES Taxi.taxi_trips(trip_id),
 CONSTRAINT CK_payment_reference
 CHECK((order_id IS NOT NULL AND trip_id IS NULL) OR (order_id IS NULL AND trip_id IS NOT NULL))
 
@@ -50,7 +52,7 @@ title nvarchar(50),
 mess_bod nvarchar(1000) , 
 is_read bit default 0,
 created_at DATETIME2 default SYSDATETIME() , 
-CONSTRAint FK_notifications_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+CONSTRAint FK_notifications_users FOREIGN KEY (user_id) REFERENCES Account.users(user_id) ON DELETE CASCADE
 
 );
 create table supp_ticket(
@@ -60,7 +62,16 @@ title nvarchar(50),
 mess_bod nvarchar(1000) , 
 status VARCHAR(20) CHECK (status IN ('Open', 'Pending', 'Closed')) DEFAULT 'Open',
 created_at DATETIME2 DEFAULT SYSDATETIME(),
-CONSTRAint FK_tickets_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+CONSTRAint FK_tickets_users FOREIGN KEY (user_id) REFERENCES Account.users(user_id) ON DELETE CASCADE
+
+);
+create table activity_log(
+log_id int identity(1,1) primary key,
+user_id int not null,
+action nvarchar(200) not null, 
+created_at DATETIME2 DEFAULT SYSDATETIME(),
+CONSTRAint FK_logs_users FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+
 
 );
 create table food_deliveries(
@@ -70,9 +81,9 @@ food_order_id int unique not null ,
 taxi_trip_id int unique not null,
 delivery_status varchar(20) check (delivery_status IN ('Assigned', 'PickedUp', 'Delivered')) DEFAULT 'Assigned',
 assigned_at DATETIME2 DEFAULT SYSDATETIME(),
-CONSTRAint FK_deliveries_trip FOREIGN KEY (taxi_trip_id) REFERENCES taxi_trips(trip_id),
-CONSTRAint FK_delivery_driver FOREIGN KEY(driver_id) REFERENCES drivers(driver_id),
-CONSTRAint FK_delivery_order FOREIGN KEY(food_order_id) REFERENCES food_orders(order_id)
+CONSTRAint FK_deliveries_trip FOREIGN KEY (taxi_trip_id) REFERENCES Taxi.taxi_trips(trip_id),
+CONSTRAint FK_delivery_driver FOREIGN KEY(driver_id) REFERENCES Taxi.drivers(driver_id),
+CONSTRAint FK_delivery_order FOREIGN KEY(food_order_id) REFERENCES Food.food_orders(order_id)
 
 );
 
