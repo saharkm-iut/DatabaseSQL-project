@@ -1,3 +1,5 @@
+use dbproject;
+go
 --همه تغییرات  مهم توی سفر را لاگ میندازه 
 
 CREATE OR ALTER TRIGGER Taxi.TR_TaxiTrip_Log
@@ -12,7 +14,10 @@ FROM inserted i LEFT JOIN deleted d ON i.trip_id=d.trip_id
 WHERE d.trip_id IS NULL;
 
 INSERT INTO Taxi.taxi_log_activity(trip_id,diver_id, action_type,table_name,record_id,description )
-SELECT i.trip_id,i.driver_id,'UPDATE','taxi_trips',i.trip_id,N'وضعیت سفر از '+ d.status+ N' به '+ i.status+ N' تغییر یافت.'
+SELECT i.trip_id,i.driver_id,'UPDATE','taxi_trips',i.trip_id,N'وضعیت سفر از '
++ ISNULL(d.status,'')
++ N' به '
++ ISNULL(i.status,'')+ N' تغییر یافت.'
 FROM inserted i JOIN deleted d ON i.trip_id=d.trip_id
 WHERE ISNULL(i.status,'')<>ISNULL(d.status,'');
 END;
@@ -88,3 +93,7 @@ FROM inserted i
 
 END;
 GO
+SELECT *
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA='Taxi'
+AND TABLE_NAME='taxi_log_activity';
