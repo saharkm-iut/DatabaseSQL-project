@@ -185,3 +185,249 @@ WHERE order_id = 1;
 SELECT * FROM Food.food_orders
 WHERE order_id = 1;
 GO
+/* ساخت کیف پول */
+
+INSERT INTO Payment.wallets(user_id, balance)
+VALUES
+(2,500000),
+(4,300000),
+(5,200000);
+GO
+
+/*=========================================================
+        PAYMENT PROCEDURES TEST
+=========================================================*/
+
+-- شارژ کیف پول
+EXEC Payment.SP_DepositWallet
+    @UserID = 2,
+    @Amount = 500000;
+
+SELECT *
+FROM Payment.wallets
+WHERE user_id = 2;
+
+SELECT TOP 5 *
+FROM Payment.wallet_transactions
+ORDER BY transaction_id DESC;
+GO
+
+-- پرداخت از کیف پول
+EXEC Payment.SP_PayFromWallet
+    @UserID = 2,
+    @Amount = 100000,
+    @ServiceType = 'Food',
+    @OrderID = 1;
+
+SELECT *
+FROM Payment.wallets
+WHERE user_id = 2;
+
+SELECT TOP 5 *
+FROM Payment.payments
+ORDER BY payment_id DESC;
+GO
+
+-- بازگشت وجه
+EXEC Payment.SP_RefundPayment
+    @PaymentID = 1;
+
+SELECT *
+FROM Payment.wallets
+WHERE user_id = 2;
+
+SELECT TOP 5 *
+FROM Payment.wallet_transactions
+ORDER BY transaction_id DESC;
+GO
+/*=========================================================
+        PAYMENT TRIGGERS TEST
+=========================================================*/
+
+-- مشاهده لاگ قبل از تست
+SELECT *
+FROM Payment.payment_log
+ORDER BY log_id DESC;
+GO
+
+----------------------------------------------------------
+-- تست Trigger ثبت پرداخت
+----------------------------------------------------------
+
+INSERT INTO Payment.payments
+(
+    user_id,
+    service_type,
+    order_id,
+    amount,
+    payment_method,
+    status
+)
+VALUES
+(
+    2,
+    'Food',
+    1,
+    120000,
+    'Online',
+    'Success'
+);
+GO
+
+-- بررسی ثبت لاگ
+SELECT TOP 10 *
+FROM Payment.payment_log
+ORDER BY log_id DESC;
+GO
+
+----------------------------------------------------------
+-- تست Trigger ثبت تراکنش کیف پول
+----------------------------------------------------------
+
+INSERT INTO Payment.wallet_transactions
+(
+    wallet_id,
+    amount,
+    transaction_type,
+    description
+)
+VALUES
+(
+    1,
+    50000,
+    'Deposit',
+    N'شارژ آزمایشی کیف پول'
+);
+GO
+
+-- بررسی لاگ
+SELECT TOP 10 *
+FROM Payment.payment_log
+ORDER BY log_id DESC;
+GO
+
+/*=========================================================
+        ACCOUNT PROCEDURES TEST
+=========================================================*/
+
+----------------------------------------------------------
+-- 1- ثبت تیکت پشتیبانی
+----------------------------------------------------------
+
+EXEC Account.SP_CreateSupportTicket
+    @UserID = 2,
+    @Title = N'مشکل در ثبت سفارش',
+    @Message = N'پرداخت انجام شد اما سفارش ثبت نشد.';
+GO
+
+SELECT *
+FROM Account.supp_ticket
+ORDER BY tick_id DESC;
+GO
+
+----------------------------------------------------------
+-- 2- ارسال اعلان
+----------------------------------------------------------
+
+EXEC Account.SP_SendNotification
+    @UserID = 2,
+    @Title = N'ثبت سفارش',
+    @Message = N'سفارش شما با موفقیت ثبت شد.';
+GO
+
+SELECT *
+FROM Account.notif
+ORDER BY notif_id DESC;
+GO
+
+----------------------------------------------------------
+-- 3- خواندن اعلان
+----------------------------------------------------------
+
+EXEC Account.SP_ReadNotification
+    @NotifID = 1;
+GO
+
+SELECT *
+FROM Account.notif
+WHERE notif_id = 1;
+GO
+
+
+/*=========================================================
+        ACCOUNT TRIGGERS TEST
+=========================================================*/
+
+----------------------------------------------------------
+-- بررسی لاگ قبل از تست
+----------------------------------------------------------
+
+SELECT *
+FROM Account.account_log_activity
+ORDER BY log_id DESC;
+GO
+
+----------------------------------------------------------
+-- تست Trigger ثبت اعلان
+----------------------------------------------------------
+
+INSERT INTO Account.notif
+(
+    user_id,
+    title,
+    mess_bod
+)
+VALUES
+(
+    2,
+    N'اعلان تست',
+    N'این یک اعلان آزمایشی است.'
+);
+GO
+
+SELECT TOP 10 *
+FROM Account.account_log_activity
+ORDER BY log_id DESC;
+GO
+
+----------------------------------------------------------
+-- تست Trigger ثبت تیکت
+----------------------------------------------------------
+
+INSERT INTO Account.supp_ticket
+(
+    user_id,
+    title,
+    mess_bod
+)
+VALUES
+(
+    2,
+    N'تیکت تست',
+    N'این یک تیکت آزمایشی است.'
+);
+GO
+
+SELECT TOP 10 *
+FROM Account.account_log_activity
+ORDER BY log_id DESC;
+GO
+
+----------------------------------------------------------
+-- تست Trigger تغییر وضعیت تیکت
+----------------------------------------------------------
+
+UPDATE Account.supp_ticket
+SET status = 'Closed'
+WHERE tick_id =
+(
+    SELECT MAX(tick_id)
+    FROM Account.supp_ticket
+);
+GO
+
+SELECT TOP 10 *
+FROM Account.account_log_activity
+ORDER BY log_id DESC;
+GO
+
