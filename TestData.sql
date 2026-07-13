@@ -371,3 +371,253 @@ VALUES
 (2, 2, 2, N'سفارش با تأخیر رسید.');
 GO
 
+
+USE DatabaseSQL_Project;
+GO
+
+
+
+
+
+
+------taxi test case
+-- in this senario we need persuade to not evolve with role and id 
+INSERT INTO Taxi.drivers(driver_id,license_num,national_code,is_approved,is_online)
+VALUES(3,'4412589631','0087452361',1,1),(5,'5123498765','2256147893',1,0);
+GO
+------------- از پرسیجر استفاده شده که در فایل پرسیجر تاکسی هست 
+EXEC Taxi.CreateDriver
+'Ahmad','Ahmadi','09123456789','ahmad.driver@gmail.com','hashed_password','1234567890','0012345678';
+GO
+-- یه جدول کمکی برا گرفتن داده ها از فایل اکسل
+CREATE TABLE Taxi.DriverImport
+(firstname NVARCHAR(50),
+lastname NVARCHAR(50),
+phone_num VARCHAR(11),
+email VARCHAR(100),
+pass_hash VARCHAR(255),
+license_num VARCHAR(10),
+national_code VARCHAR(10)
+);
+GO
+BULK INSERT Taxi.DriverImport
+from 'F:\dbproject\Drivers (2).csv'
+WITH
+(
+FORMAT='CSV',
+FIRSTROW=2, -- خط اول  اکسل را نادیده میگیره 
+FIELDTERMINATOR=',',
+ROWTERMINATOR='\n',
+CODEPAGE='65001'
+);
+GO
+select phone_num, LEN(phone_num) AS Len, DATALENGTH(phone_num) AS DataLength,'[' + phone_num + ']' AS Value
+from Taxi.DriverImport;
+declare @firstname NVARCHAR(50),@lastname NVARCHAR(50),@phone VARCHAR(11),@email VARCHAR(100),@pass VARCHAR(255),@license VARCHAR(10),@national VARCHAR(10);
+-- برا اینکه داده ها را از جدول کمکی وارد جدول اصلی کنه از کرسر استفاده میشه  
+-- بعد از همون پرسیجر استفاده می کنه برا هندل کردن ایدی ها دیگه نیاز نیس خودمون بشماریم ایدی دستی بدیم پرسیجر هندلمی کنه
+declare driver_cursor CURSOR LOCAL FAST_FORWARD FOR
+select firstname,lastname,phone_num,email,pass_hash,license_num,national_code
+from Taxi.DriverImport;
+OPEN driver_cursor;
+FETCH NEXT from driver_cursor
+INTO @firstname,@lastname,@phone,@email,@pass,@license,@national;
+WHILE @@FETCH_STATUS=0
+BEGIN
+EXEC Taxi.CreateDriver
+@firstname,@lastname,@phone,@email,@pass,@license,@national;
+FETCH NEXT from driver_cursor
+INTO @firstname,@lastname,@phone,@email,@pass,@license,@national;
+END
+CLOSE driver_cursor;
+DEALLOCATE driver_cursor;
+GO
+--select* from Taxi.drivers;
+
+-- قیمت پایه یکیه 
+INSERT INTO Taxi.fare_rule (base_price, price_per_km, price_per_min)
+VALUES (30000.00, 5000.00, 1500.00);
+GO
+
+
+--INSERT INTO Taxi.fare_rule (base_price, price_per_km, price_per_min)
+--VALUES 
+--(15000.00, 4500.00, 1200.00),
+--(22000.00, 5500.00, 1500.00),
+--(25000.00, 6000.00, 1800.00),
+--(18000.00, 4900.00, 1300.00),
+--(30000.00, 7000.00, 2000.00);
+
+EXEC Taxi.SP_RegisterVehicle '09111111113', N'پژو 206', N'سفید', N'12ب345-ایران23'; -- رضا مرادی
+EXEC Taxi.SP_RegisterVehicle '09111111115', N'پراید 131', N'نقره‌ای', N'56ج789-ایران43'; -- محمد جعفری
+EXEC Taxi.SP_RegisterVehicle '09573456789', N'سمند LX', N'خاکستری', N'78د123-ایران13'; -- علی احمدی (CSV)
+EXEC Taxi.SP_RegisterVehicle '09123416787', N'پژو پارس', N'مشکی', N'45ق432-ایران67'; -- حسین رحیمی (CSV)
+EXEC Taxi.SP_RegisterVehicle '09126456785', N'ساینا', N'سفید', N'34ق987-ایران53'; -- سینا مرادی (CSV)
+
+-- ۳.  موقعیت‌های زنده با ساب‌ بر اساس تلفن هندل می‌شن
+INSERT INTO Taxi.live_location_driver (driver_id, latitude, longitude)
+select user_id, 32.654600, 51.668000 from Account.users where phone_num = '09111111113';
+INSERT INTO Taxi.live_location_driver (driver_id, latitude, longitude)
+select user_id, 32.635200, 51.669500 from Account.users where phone_num = '09111111115';
+INSERT INTO Taxi.live_location_driver (driver_id, latitude, longitude)
+select user_id, 32.640800, 51.651200 from Account.users where phone_num = '09573456789';
+INSERT INTO Taxi.live_location_driver (driver_id, latitude, longitude)
+select user_id, 32.648900, 51.661700 from Account.users where phone_num = '09123416787';
+INSERT INTO Taxi.live_location_driver (driver_id, latitude, longitude)
+select user_id, 32.657300, 51.677100 from Account.users where phone_num = '09126456785';
+
+--  درج  مدارک برای راننده‌ها
+INSERT INTO Taxi.driver_doc (driver_id, doc_type, file_path)
+select user_id, N'گواهینامه', '/docs/license_1.jpg' from Account.users where phone_num = '09111111113';
+INSERT INTO Taxi.driver_doc (driver_id, doc_type, file_path)
+select user_id, N'معاینه فنی', '/docs/tech_1.pdf' from Account.users where phone_num = '09111111113';
+INSERT INTO Taxi.driver_doc (driver_id, doc_type, file_path)
+select user_id, N'گواهینامه', '/docs/license_2.jpg' from Account.users where phone_num = '09111111115';
+INSERT INTO Taxi.driver_doc (driver_id, doc_type, file_path)
+select user_id, N'کارت ملی', '/docs/national_card.png' from Account.users where phone_num = '09573456789';
+INSERT INTO Taxi.driver_doc (driver_id, doc_type, file_path)
+select user_id, N'گواهینامه', '/docs/license_3.jpg' from Account.users where phone_num = '09123416787';
+
+
+
+--EXEC Taxi.SP_RegisterVehicle 
+--'09123456789',
+--N'سمند LX',
+--N'خاکستری',
+--N'78د123-ایران13';
+
+
+
+
+USE DatabaseSQL_Project;
+GO
+--1
+USE DatabaseSQL_Project;
+GO
+
+-- سناریو 1: مریم با رضا سفر کامل می‌کند
+
+EXEC Taxi.SP_RequestTrip
+'09111111114',
+N'خیابان توحید',
+N'مرداویج',
+32.6489,
+51.6617,
+32.6352,
+51.6695,
+45000,
+'TAXI15';
+
+EXEC Taxi.SP_AcceptTrip
+'09111111113',
+'09111111114';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111114',
+'Arrived';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111114',
+'OnTrip';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111114',
+'Completed';
+
+GO
+
+
+-- سناریو 2: سارا درخواست می‌دهد و لغو می‌کند
+
+
+-- سناریو 3: علی با محمد سفر کامل می‌کند
+
+EXEC Taxi.SP_RequestTrip
+'09111111111',
+N'چهارباغ',
+N'پل فلزی',
+32.6546,
+51.6680,
+32.6400,
+51.6700,
+40000,
+'GLOBAL5';
+
+EXEC Taxi.SP_AcceptTrip
+'09111111115',
+'09111111111';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111111',
+'Arrived';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111111',
+'OnTrip';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111111',
+'Completed';
+
+GO
+
+
+-- سناریو 4: محمد با احمد سفر می‌کند
+
+EXEC Taxi.SP_RequestTrip
+'09111111115',
+N'آمادگاه',
+N'انقلاب',
+32.6573,
+51.6771,
+32.6320,
+51.6535,
+60000,
+NULL;
+
+EXEC Taxi.SP_AcceptTrip
+'09123456789',
+'09111111115';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111115',
+'Arrived';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111115',
+'OnTrip';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111115',
+'Completed';
+
+GO
+
+
+-- سناریو 5: سارا با رضا سفر کوتاه
+
+EXEC Taxi.SP_RequestTrip
+'09111111112',
+N'چهارباغ بالا',
+N'سی و سه پل',
+32.6510,
+51.6670,
+32.6450,
+51.6675,
+22000,
+NULL;
+
+EXEC Taxi.SP_AcceptTrip
+'09111111113',
+'09111111112';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111112',
+'OnTrip';
+
+EXEC Taxi.SP_UpdateTripStatus
+'09111111112',
+'Completed';
+
+GO
+
