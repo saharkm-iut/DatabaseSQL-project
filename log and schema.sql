@@ -1,12 +1,11 @@
+USE DatabaseSQL_Project;
+GO
 CREATE SCHEMA Account;
 GO
-
 CREATE SCHEMA Taxi;
 GO
-
 CREATE SCHEMA Food;
 GO
-
 CREATE SCHEMA Payment;
 GO
 ALTER SCHEMA Account TRANSFER dbo.users;
